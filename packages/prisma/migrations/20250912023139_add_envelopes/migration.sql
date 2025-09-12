@@ -111,39 +111,37 @@ DROP INDEX "Recipient_templateId_idx";
 -- DropIndex
 DROP INDEX "TemplateDirectLink_templateId_key";
 
--- AlterTable
-ALTER TABLE "DocumentAuditLog" DROP COLUMN "documentId",
-ADD COLUMN     "envelopeId" TEXT NOT NULL;
+-- [CUSTOM_CHANGE] Create DocumentMeta records for Documents that don't have them
+INSERT INTO "DocumentMeta" ("id", "documentId")
+SELECT
+  gen_random_uuid(),
+  id
+FROM "Document"
+WHERE "id" NOT IN (SELECT "documentId" FROM "DocumentMeta" WHERE "documentId" IS NOT NULL);
+
+-- [CUSTOM_CHANGE] Create DocumentMeta records for Templates that don't have them
+INSERT INTO "DocumentMeta" ("id", "templateId")
+SELECT
+  gen_random_uuid(),
+  id
+FROM "Template"
+WHERE "id" NOT IN (SELECT "templateId" FROM "DocumentMeta" WHERE "templateId" IS NOT NULL);
 
 -- AlterTable
-ALTER TABLE "DocumentMeta" DROP COLUMN "documentId",
-DROP COLUMN "password",
-DROP COLUMN "templateId";
+ALTER TABLE "DocumentAuditLog" ADD COLUMN     "envelopeId" TEXT;
 
 -- AlterTable
-ALTER TABLE "DocumentShareLink" DROP COLUMN "documentId",
-ADD COLUMN     "envelopeId" TEXT NOT NULL;
+ALTER TABLE "DocumentShareLink" ADD COLUMN     "envelopeId" TEXT;
 
 -- AlterTable
-ALTER TABLE "Field" DROP COLUMN "documentId",
-DROP COLUMN "templateId",
-ADD COLUMN     "envelopeId" TEXT NOT NULL,
-ADD COLUMN     "envelopeItemId" TEXT NOT NULL;
+ALTER TABLE "Field" ADD COLUMN     "envelopeId" TEXT,
+ADD COLUMN     "envelopeItemId" TEXT;
 
 -- AlterTable
-ALTER TABLE "Recipient" DROP COLUMN "documentId",
-DROP COLUMN "templateId",
-ADD COLUMN     "envelopeId" TEXT NOT NULL;
+ALTER TABLE "Recipient" ADD COLUMN     "envelopeId" TEXT;
 
 -- AlterTable
-ALTER TABLE "TemplateDirectLink" DROP COLUMN "templateId",
-ADD COLUMN     "envelopeId" TEXT NOT NULL;
-
--- DropTable
-DROP TABLE "Document";
-
--- DropTable
-DROP TABLE "Template";
+ALTER TABLE "TemplateDirectLink" ADD COLUMN     "envelopeId" TEXT;
 
 -- CreateTable
 CREATE TABLE "Envelope" (
@@ -192,6 +190,225 @@ CREATE TABLE "Counter" (
 
     CONSTRAINT "Counter_pkey" PRIMARY KEY ("id")
 );
+
+-- [CUSTOM_CHANGE] Initialize Counter table for document and template IDs
+INSERT INTO "Counter" ("id", "value") VALUES ('document', (SELECT COALESCE(MAX("id"), 0) FROM "Document"));
+INSERT INTO "Counter" ("id", "value") VALUES ('template', (SELECT COALESCE(MAX("id"), 0) FROM "Template"));
+
+-- [CUSTOM_CHANGE] Migrate Documents to Envelopes
+INSERT INTO "Envelope" (
+    "id",
+    "secondaryId",
+    "externalId",
+    "type",
+    "createdAt",
+    "updatedAt",
+    "completedAt",
+    "deletedAt",
+    "title",
+    "status",
+    "source",
+    "qrToken",
+    "useLegacyFieldInsertion",
+    "authOptions",
+    "formValues",
+    "visibility",
+    "templateType",
+    "publicTitle",
+    "publicDescription",
+    "templateId",
+    "userId",
+    "teamId",
+    "folderId",
+    "documentMetaId"
+)
+SELECT
+    generate_prefix_id('envelope'),
+    'document_' || d."id", -- Create legacy ID for documents
+    d."externalId",
+    'DOCUMENT'::"EnvelopeType",
+    d."createdAt",
+    d."updatedAt",
+    d."completedAt",
+    d."deletedAt",
+    d."title",
+    d."status",
+    d."source",
+    d."qrToken",
+    d."useLegacyFieldInsertion",
+    d."authOptions",
+    d."formValues",
+    d."visibility",
+    'PRIVATE',
+    '',
+    '',
+    d."templateId",
+    d."userId",
+    d."teamId",
+    d."folderId",
+    dm."id"
+FROM "Document" d
+LEFT JOIN "DocumentMeta" dm ON dm."documentId" = d."id";
+
+-- [CUSTOM_CHANGE] Migrate Templates to Envelopes
+INSERT INTO "Envelope" (
+    "id",
+    "secondaryId",
+    "externalId",
+    "type",
+    "createdAt",
+    "updatedAt",
+    "completedAt",
+    "deletedAt",
+    "title",
+    "status",
+    "source",
+    "qrToken",
+    "useLegacyFieldInsertion",
+    "authOptions",
+    "formValues",
+    "visibility",
+    "templateType",
+    "publicTitle",
+    "publicDescription",
+    "templateId",
+    "userId",
+    "teamId",
+    "folderId",
+    "documentMetaId"
+)
+SELECT
+    generate_prefix_id('envelope'),
+    'template_' || t."id", -- Create legacy ID for templates
+    t."externalId",
+    'TEMPLATE'::"EnvelopeType",
+    t."createdAt",
+    t."updatedAt",
+    NULL,
+    NULL,
+    t."title",
+    'DRAFT',
+    'TEMPLATE', -- Todo: Migration What to use for source?
+    NULL,
+    t."useLegacyFieldInsertion",
+    t."authOptions",
+    NULL,
+    t."visibility",
+    t."type",
+    t."publicTitle",
+    t."publicDescription",
+    NULL,
+    t."userId",
+    t."teamId",
+    t."folderId",
+    dm."id"
+FROM "Template" t
+LEFT JOIN "DocumentMeta" dm ON dm."templateId" = t."id";
+
+-- [CUSTOM_CHANGE] Create EnvelopeItems for Documents
+INSERT INTO "EnvelopeItem" ("id", "title", "documentDataId", "envelopeId")
+SELECT
+    generate_prefix_id('envelope_item'),
+    d."title",
+    d."documentDataId",
+    e."id"
+FROM "Document" d
+JOIN "Envelope" e ON e."secondaryId" = 'document_' || d."id";
+
+-- [CUSTOM_CHANGE] Create EnvelopeItems for Templates
+INSERT INTO "EnvelopeItem" ("id", "title", "documentDataId", "envelopeId")
+SELECT
+    generate_prefix_id('envelope_item'),
+    t."title",
+    t."templateDocumentDataId",
+    e."id"
+FROM "Template" t
+JOIN "Envelope" e ON e."secondaryId" = 'template_' || t."id";
+
+-- [CUSTOM_CHANGE] Update DocumentAuditLog with envelope IDs
+UPDATE "DocumentAuditLog"
+SET "envelopeId" = e."id"
+FROM "Document" d
+JOIN "Envelope" e ON e."secondaryId" = 'document_' || d."id"
+WHERE "DocumentAuditLog"."documentId" = d."id";
+
+-- [CUSTOM_CHANGE] Update Recipients for Documents
+UPDATE "Recipient"
+SET "envelopeId" = e."id"
+FROM "Document" d
+JOIN "Envelope" e ON e."secondaryId" = 'document_' || d."id"
+WHERE "Recipient"."documentId" = d."id";
+
+-- [CUSTOM_CHANGE] Update Recipients for Templates
+UPDATE "Recipient"
+SET "envelopeId" = e."id"
+FROM "Template" t
+JOIN "Envelope" e ON e."secondaryId" = 'template_' || t."id"
+WHERE "Recipient"."templateId" = t."id";
+
+-- [CUSTOM_CHANGE] Update Fields for Documents
+UPDATE "Field"
+SET "envelopeId" = e."id", "envelopeItemId" = ei."id"
+FROM "Document" d
+JOIN "Envelope" e ON e."secondaryId" = 'document_' || d."id"
+JOIN "EnvelopeItem" ei ON ei."envelopeId" = e."id"
+WHERE "Field"."documentId" = d."id";
+
+-- [CUSTOM_CHANGE] Update Fields for Templates
+UPDATE "Field"
+SET "envelopeId" = e."id", "envelopeItemId" = ei."id"
+FROM "Template" t
+JOIN "Envelope" e ON e."secondaryId" = 'template_' || t."id"
+JOIN "EnvelopeItem" ei ON ei."envelopeId" = e."id"
+WHERE "Field"."templateId" = t."id";
+
+-- [CUSTOM_CHANGE] Update DocumentShareLink
+UPDATE "DocumentShareLink"
+SET "envelopeId" = e."id"
+FROM "Document" d
+JOIN "Envelope" e ON e."secondaryId" = 'document_' || d."id"
+WHERE "DocumentShareLink"."documentId" = d."id";
+
+-- [CUSTOM_CHANGE] Update TemplateDirectLink
+UPDATE "TemplateDirectLink"
+SET "envelopeId" = e."id"
+FROM "Template" t
+JOIN "Envelope" e ON e."secondaryId" = 'template_' || t."id"
+WHERE "TemplateDirectLink"."templateId" = t."id";
+
+-- DropTable
+DROP TABLE "Document";
+
+-- DropTable
+DROP TABLE "Template";
+
+-- AlterTable
+ALTER TABLE "DocumentMeta" DROP COLUMN "documentId",
+DROP COLUMN "password",
+DROP COLUMN "templateId";
+
+-- AlterTable
+ALTER TABLE "DocumentAuditLog" DROP COLUMN "documentId",
+ALTER COLUMN "envelopeId" SET NOT NULL;
+
+-- AlterTable
+ALTER TABLE "DocumentShareLink" DROP COLUMN "documentId",
+ALTER COLUMN "envelopeId" SET NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Field" DROP COLUMN "documentId",
+DROP COLUMN "templateId",
+ALTER COLUMN "envelopeId" SET NOT NULL,
+ALTER COLUMN "envelopeItemId" SET NOT NULL;
+
+-- AlterTable
+ALTER TABLE "Recipient" DROP COLUMN "documentId",
+DROP COLUMN "templateId",
+ALTER COLUMN     "envelopeId" SET NOT NULL;
+
+-- AlterTable
+ALTER TABLE "TemplateDirectLink" DROP COLUMN "templateId",
+ALTER COLUMN     "envelopeId" SET NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Envelope_secondaryId_key" ON "Envelope"("secondaryId");
