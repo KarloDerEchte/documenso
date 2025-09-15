@@ -372,6 +372,7 @@ enum EnvelopeType {
   TEMPLATE
 }
 
+/// @zod.import(["import { ZDocumentAuthOptionsSchema } from '@documenso/lib/types/document-auth';", "import { ZDocumentFormValuesSchema } from '@documenso/lib/types/document-form-values';"])
 model Envelope {
   id          String  @id
   secondaryId String  @unique
@@ -423,7 +424,6 @@ model Envelope {
   documentMeta   DocumentMeta @relation(fields: [documentMetaId], references: [id])
 }
 
-/// @zod.import(["import { ZDocumentAuthOptionsSchema } from '@documenso/lib/types/document-auth';", "import { ZDocumentFormValuesSchema } from '@documenso/lib/types/document-form-values';"])
 model EnvelopeItem {
   id String @id
 
