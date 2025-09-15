@@ -155,7 +155,7 @@ CREATE TABLE "Envelope" (
     "deletedAt" TIMESTAMP(3),
     "title" TEXT NOT NULL,
     "status" "DocumentStatus" NOT NULL DEFAULT 'DRAFT',
-    "source" "DocumentSource",
+    "source" "DocumentSource" NOT NULL,
     "qrToken" TEXT,
     "useLegacyFieldInsertion" BOOLEAN NOT NULL DEFAULT false,
     "authOptions" JSONB,
