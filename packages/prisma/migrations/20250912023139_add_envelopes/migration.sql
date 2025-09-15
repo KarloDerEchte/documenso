@@ -143,9 +143,6 @@ ALTER TABLE "Recipient" ADD COLUMN     "envelopeId" TEXT;
 -- AlterTable
 ALTER TABLE "TemplateDirectLink" ADD COLUMN     "envelopeId" TEXT;
 
--- AlterEnum
-ALTER TYPE "DocumentSource" ADD VALUE 'NONE';
-
 -- CreateTable
 CREATE TABLE "Envelope" (
     "id" TEXT NOT NULL,
