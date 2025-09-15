@@ -385,8 +385,8 @@ model Envelope {
   deletedAt   DateTime?
 
   title   String
-  status  DocumentStatus @default(DRAFT)
-  source  DocumentSource
+  status  DocumentStatus  @default(DRAFT)
+  source  DocumentSource?
   qrToken String? /// @zod.string.describe("The token for viewing the document using the QR code on the certificate.")
 
   useLegacyFieldInsertion Boolean @default(false)
