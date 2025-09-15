@@ -70,7 +70,7 @@ export const duplicateTemplate = async ({ id, userId, teamId }: DuplicateTemplat
       documentMetaId: createdDocumentMeta.id,
       authOptions: envelope.authOptions || undefined,
       visibility: envelope.visibility,
-      source: DocumentSource.DOCUMENT, // Todo: Migration what to use here.
+      source: DocumentSource.NONE,
     },
     include: {
       recipients: true,

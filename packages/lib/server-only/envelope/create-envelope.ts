@@ -238,7 +238,7 @@ export const createEnvelope = async ({
         visibility,
         folderId,
         formValues,
-        source: DocumentSource.DOCUMENT, // Todo: Migration
+        source: type === EnvelopeType.DOCUMENT ? DocumentSource.DOCUMENT : DocumentSource.NONE,
         documentMetaId: documentMeta.id,
 
         // Template specific fields.

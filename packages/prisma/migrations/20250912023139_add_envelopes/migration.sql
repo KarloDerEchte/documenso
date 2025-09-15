@@ -143,6 +143,12 @@ ALTER TABLE "Recipient" ADD COLUMN     "envelopeId" TEXT;
 -- AlterTable
 ALTER TABLE "TemplateDirectLink" ADD COLUMN     "envelopeId" TEXT;
 
+-- AlterEnum
+ALTER TYPE "DocumentSource" ADD VALUE 'NONE';
+
+-- AlterTable
+ALTER TABLE "Envelope" ALTER COLUMN "source" SET NOT NULL;
+
 -- CreateTable
 CREATE TABLE "Envelope" (
     "id" TEXT NOT NULL,
@@ -288,7 +294,7 @@ SELECT
     NULL,
     t."title",
     'DRAFT',
-    'TEMPLATE', -- Todo: Migration What to use for source?
+    'NONE'::"DocumentSource",
     NULL,
     t."useLegacyFieldInsertion",
     t."authOptions",

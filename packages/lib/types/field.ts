@@ -30,7 +30,7 @@ export const ZFieldSchema = FieldSchema.pick({
   inserted: true,
   fieldMeta: true,
 }).extend({
-  // Todo: Migration - Backwards compatibility.
+  // Backwards compatibility.
   documentId: z.number().nullish(),
   templateId: z.number().nullish(),
 });
