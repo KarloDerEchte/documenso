@@ -28,6 +28,10 @@ const setupDocumentAndNavigateToSignersStep = async (page: Page) => {
 };
 
 const triggerAutosave = async (page: Page) => {
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+
   await page.locator('#document-flow-form-container').click();
   await page.locator('#document-flow-form-container').blur();
 
