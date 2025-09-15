@@ -146,9 +146,6 @@ ALTER TABLE "TemplateDirectLink" ADD COLUMN     "envelopeId" TEXT;
 -- AlterEnum
 ALTER TYPE "DocumentSource" ADD VALUE 'NONE';
 
--- AlterTable
-ALTER TABLE "Envelope" ALTER COLUMN "source" SET NOT NULL;
-
 -- CreateTable
 CREATE TABLE "Envelope" (
     "id" TEXT NOT NULL,
@@ -161,7 +158,7 @@ CREATE TABLE "Envelope" (
     "deletedAt" TIMESTAMP(3),
     "title" TEXT NOT NULL,
     "status" "DocumentStatus" NOT NULL DEFAULT 'DRAFT',
-    "source" "DocumentSource" NOT NULL,
+    "source" "DocumentSource",
     "qrToken" TEXT,
     "useLegacyFieldInsertion" BOOLEAN NOT NULL DEFAULT false,
     "authOptions" JSONB,
