@@ -15,7 +15,7 @@ import { FolderDeleteDialog } from '~/components/dialogs/folder-delete-dialog';
 import { FolderMoveDialog } from '~/components/dialogs/folder-move-dialog';
 import { FolderUpdateDialog } from '~/components/dialogs/folder-update-dialog';
 import { TemplateCreateDialog } from '~/components/dialogs/template-create-dialog';
-import { DocumentUploadDropzone } from '~/components/general/document/document-upload';
+import { DocumentUploadButton } from '~/components/general/document/document-upload-button';
 import { FolderCard, FolderCardEmpty } from '~/components/general/folder/folder-card';
 import { useCurrentTeam } from '~/providers/team';
 
@@ -33,9 +33,6 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
   const [folderToDelete, setFolderToDelete] = useState<TFolderWithSubfolders | null>(null);
   const [isSettingsFolderOpen, setIsSettingsFolderOpen] = useState(false);
   const [folderToSettings, setFolderToSettings] = useState<TFolderWithSubfolders | null>(null);
-
-  const { mutateAsync: pinFolder } = trpc.folder.pinFolder.useMutation();
-  const { mutateAsync: unpinFolder } = trpc.folder.unpinFolder.useMutation();
 
   const { data: foldersData, isPending } = trpc.folder.getFolders.useQuery({
     type,
@@ -97,8 +94,11 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
         </div>
 
         <div className="flex gap-4 sm:flex-row sm:justify-end">
+          {/* Todo: Envelopes - Feature flag */}
+          {/* <EnvelopeUploadButton type={type} folderId={parentId || undefined} /> */}
+
           {type === FolderType.DOCUMENT ? (
-            <DocumentUploadDropzone />
+            <DocumentUploadButton />
           ) : (
             <TemplateCreateDialog folderId={parentId ?? undefined} />
           )}
@@ -152,8 +152,6 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
                       setFolderToMove(folder);
                       setIsMovingFolder(true);
                     }}
-                    onPin={(folderId) => void pinFolder({ folderId })}
-                    onUnpin={(folderId) => void unpinFolder({ folderId })}
                     onSettings={(folder) => {
                       setFolderToSettings(folder);
                       setIsSettingsFolderOpen(true);
@@ -177,8 +175,6 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
                       setFolderToMove(folder);
                       setIsMovingFolder(true);
                     }}
-                    onPin={(folderId) => void pinFolder({ folderId })}
-                    onUnpin={(folderId) => void unpinFolder({ folderId })}
                     onSettings={(folder) => {
                       setFolderToSettings(folder);
                       setIsSettingsFolderOpen(true);
