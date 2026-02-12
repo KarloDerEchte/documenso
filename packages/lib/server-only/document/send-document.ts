@@ -116,9 +116,11 @@ export const sendDocument = async ({
       .filter((r) => r.signingStatus === SigningStatus.NOT_SIGNED && r.role !== RecipientRole.CC)
       .slice(0, 1);
 
+
+    console.log('Recipients to notify based on signing order:', recipientsToNotify);
     // Secondary filter so we aren't resending if the current active recipient has already
     // received the envelope.
-    recipientsToNotify = recipientsToNotify.filter((r) => r.sendStatus !== SendStatus.SENT);
+    // recipientsToNotify = recipientsToNotify.filter((r) => r.sendStatus !== SendStatus.SENT);
   }
 
   if (envelope.envelopeItems.length === 0) {
