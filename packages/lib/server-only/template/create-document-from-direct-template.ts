@@ -392,7 +392,7 @@ export const createDocumentFromDirectTemplate = async ({
                   actionAuth: authOptions.actionAuth,
                 }),
                 sendStatus:
-                  recipient.role === RecipientRole.CC ? SendStatus.SENT : SendStatus.NOT_SENT,
+                  recipient.role === RecipientRole.CC ? SendStatus.NOT_SENT : SendStatus.NOT_SENT,
                 signingStatus:
                   recipient.role === RecipientRole.CC
                     ? SigningStatus.SIGNED
